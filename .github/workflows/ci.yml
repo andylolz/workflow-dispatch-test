@@ -1,0 +1,45 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: I hereby accept full responsibility for any consequences arising from this workflow dispatch
+        type: boolean
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ inputs.confirmation == true }}
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+    steps:
+      - name: Check confirmation statement
+        if: ${{ inputs.confirmation != true }}
+        run: |
+          echo 'You must accept full responsibility. Exiting'
+          exit 1
+
+      - name: Check we’re running on a tag, not a branch
+        if: ${{ !github.ref.startsWith('refs/tags/') }}
+        run: |
+          echo 'This workflow must be run on a tag! It won’t work otherwise'
+          exit 1
+
+      - name: Get latest release
+        id: latest-release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = context.ref.split('/').pop();
+            console.log(tag);
+
+            const resp = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: tag
+            });
+
+            console.log(resp);
+
+            return resp;
