@@ -1,0 +1,22 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: I hereby accept full responsibility for any consequences arising from this workflow dispatch
+        type: boolean
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ inputs.confirmation == true }}
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+    steps:
+      - name: Get latest release
+        id: latest-release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log(context.ref);
